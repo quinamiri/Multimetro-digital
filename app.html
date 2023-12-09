@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multímetro Virtual</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    
+        button {
+            margin-top: 5px;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none; 
+        }
+    
+        #startBtn {
+            background-color: #a3d2ca; 
+        }
+    
+        #stopBtn {
+            background-color: #f4baba; 
+        }
+    
+        #resetBtn {
+            background-color: #f9e1bb; 
+        }
+
+        .button-container {
+        display: flex;
+        gap: 10px; /* Espacio entre los botones */
+        margin-top: 5px; /* Espacio arriba del contenedor de botones */
+         }
+    
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+
+        #graphCanvas, #measurementTable {
+            display: inline-block;
+            vertical-align: top;
+        }
+    
+        table {
+            width: calc(50% - 10px);
+            margin-right: 10px;
+            border-collapse: collapse;
+        }
+    
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+    
+        canvas {
+            width: 400px;
+            height: 200px;
+        }
+        
+    </style>
+        
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Multímetro Virtual</h1>
+
+    <label for="resistanceInput">Valor de la Resistencia (ohmios): </label>
+    <input type="number" id="resistanceInput" placeholder="Ingrese el valor de la resistencia">
+
+    <p id="reading">Valor actual: --</p>
+
+ <div class="button-container">
+    <button id=startBtn onclick="startSimulation()">Iniciar Simulación</button>
+    <button id=stopBtn  onclick="stopSimulation()">Detener Simulación</button>
+    <button id=resetBtn onclick="reset()">Reiniciar</button>
+ </div>
+    
+
+    <div class="container">
+        <table id="measurementTable">
+            <thead>
+                <tr>
+                    <th>Voltaje (V)</th>
+                    <th>Corriente (A)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Historial de mediciones se mostrará aquí -->
+            </tbody>
+        </table>
+        <canvas id="scatterChart"></canvas>
+    </div>
+    
+    <canvas id="scatterChart" width="400" height="200"></canvas>
+    
+    <script>
+        let isSimulating = false;
+        let intervalId;
+        let resistance;
+        let chart;
+
+        function startSimulation() {
+            resistance = parseFloat(document.getElementById('resistanceInput').value);
+
+            if (isNaN(resistance) || resistance <= 0) {
+                alert('Por favor, ingrese un valor de resistencia válido mayor que cero.');
+                return;
+            }
+
+            if (!isSimulating) {
+                isSimulating = true;
+                intervalId = setInterval(simulateMeasurement, 1000); // Simula una medición cada segundo
+
+                // Crear el gráfico de dispersión
+                const ctx = document.getElementById('scatterChart').getContext('2d');
+                chart = new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Voltaje vs Corriente',
+                            data: [],
+                            backgroundColor: 'rgba(75, 192, 192, 0.5)', // Color del fondo de los puntos
+                            borderColor: 'rgba(75, 192, 192, 1)', // Color del borde de los puntos
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: {
+                                    display: true,
+                                    text: 'Corriente (A)'
+                                    
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: 'Voltaje (V)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function stopSimulation() {
+            if (isSimulating) {
+                isSimulating = false;
+                clearInterval(intervalId);
+            }
+        }
+
+        function reset() {
+            document.getElementById('measurementTable').getElementsByTagName('tbody')[0].innerHTML = '';
+            chart.data.datasets[0].data = [];
+            chart.update();
+        }
+
+        function simulateMeasurement() {
+            // Simulación de medición
+            const fuente = Math.random() * 20; // Simula la variación de la fuente
+            const voltage = fuente; // El voltaje es igual a la variación de la fuente
+            const current = voltage / resistance; // Aplicamos la Ley de Ohm
+
+            // Actualiza la interfaz con los valores simulados
+            document.getElementById('reading').textContent = `Valor actual: Voltaje ${voltage.toFixed(2)} V, Corriente ${current.toFixed(2)} A`;
+
+            // Agrega la medición a la tabla y al historial
+            addToMeasurementTable(voltage.toFixed(2), current.toFixed(2));
+
+            // Agrega los puntos al gráfico de dispersión
+            chart.data.datasets[0].data.push({ x:current , y: voltage });
+            chart.update();
+        }
+
+        function addToMeasurementTable(voltage, current) {
+            const table = document.getElementById('measurementTable').getElementsByTagName('tbody')[0];
+            const newRow = table.insertRow();
+            const cell1 = newRow.insertCell(0);
+            const cell2 = newRow.insertCell(1);
+            cell1.textContent = voltage.replace('.', ',');
+            cell2.textContent = current.replace('.', ',');
+        }
+    </script>
+</body>
+</html>
